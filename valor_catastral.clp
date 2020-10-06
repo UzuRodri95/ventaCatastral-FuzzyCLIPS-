@@ -101,7 +101,7 @@
     (bind ?Rventanas (read))
     (assert(n_ventanas ?Rventanas))
     
-    (run)
+    ;;(run)
     
 )
 
@@ -188,7 +188,7 @@
     (assert (VUE-DIF more-or-less Bajo))
 )
     
-(defrule menos_tres_ventanas
+(defrule mas_cinco_ventanas
     (n_ventanas ?vent)
     (test(> ?vent 5))
     =>
