@@ -1,3 +1,5 @@
+;#############################################################################################################################
+;###    PRACTICA 1: 
 ;####################################################################################
 ;##                             FUZZIFY FUNCTION                                   ##
 ;####################################################################################
@@ -29,13 +31,16 @@
 ;####################################################################################
 ;DEFINITION OF casa CLASS
 (deftemplate casa
+    (slot nombre (type SYMBOL))
     (slot Categoria-Vivienda (type INTEGER))
     (slot Edad_Aparente (type INTEGER))
-    (slot unidad_x_superficie (type INTEGER))
+    (slot vue_momentum (type FLOAT))
+    (slot vue_maximum (type FLOAT))
     (slot n_ventanas (type INTEGER))
+
 )
 
-;DECLARATION OF FUZZY VARIABLE Categoria-Vivienda
+;DECLARATION OF FUZZY INPUT VARIABLE Categoria-Vivienda
 (deftemplate Categoria-Vivienda
     0 150 puntos
     (
@@ -46,7 +51,7 @@
     )
 )
 
-;DECLARATION OF FUZZY VARIABLE Edad_Aparente
+;DECLARATION OF FUZZY INPUT VARIABLE Edad_Aparente
 (deftemplate Edad_Aparente
     0 100 anyos
     (
@@ -57,7 +62,7 @@
     )
 )
 
-;DECLARATION OF FUZZY VARIABLE unidad_x_superficie
+;DECLARATION OF FUZZY OUTPUT VARIABLE VUE-DIF
 (deftemplate VUE-DIF 
     0 10000 unidad_x_superficie
     (
@@ -73,13 +78,26 @@
 ;##                                    ASSERTS                                     ##
 ;####################################################################################
 (deffunction leerconsola ()
+    (reset)
+
+    (printout t "Introduzca el nombre de la vivienda (Ej. V1): " crlf)
+    (bind ?Rnombre (read))
+    (assert(nombre ?Rnombre))
+
     (printout t "Introduzca puntuacion: " crlf)
     (bind ?Rpuntuacion (read))
-    (fuzzify Categoria-Vivienda ?Rpuntuacion 0.1)
+    (fuzzify Categoria-Vivienda ?Rpuntuacion 0)
 
     (printout t "Introduzca tipo edad: " crlf)
     (bind ?Redad (read))
-    (fuzzify Edad_Aparente ?Redad 0.1)
+    (fuzzify Edad_Aparente ?Redad 0)
+
+    (printout t "Introduzca numero ventanas: " crlf)
+    (bind ?Rventanas (read))
+    (assert(n_ventanas ?Rventanas))
+    
+    (run)
+    
 )
 
 ;####################################################################################
@@ -96,7 +114,7 @@
 ;; REGLA 2
 (defrule cat-alta_eda-niMedio_niViejo
     (Categoria-Vivienda Alta)
-    (NOT [Edad_Aparente Medio OR Viejo])
+    (Edad_Aparente not [ Medio or Viejo ])
     =>
     (assert (VUE-DIF Alto))
 )
@@ -104,7 +122,7 @@
 ;; REGLA 3
 (defrule cat-alta_eda-niReciente_niNuevo
     (Categoria-Vivienda Alta)
-    (NOT [Edad_Aparente Reciente OR Nuevo])
+    (Edad_Aparente not [ Reciente or Nuevo ])
     =>
     (assert (VUE-DIF Medio))
 )
@@ -114,13 +132,13 @@
     (Categoria-Vivienda Intermedia)
     (Edad_Aparente Nuevo)
     =>
-    (assert (NOT [Medio OR Alto]))
+    (assert (VUE-DIF not [ Medio or Alto ]))
 )
 
 ;;REGLA 5
 (defrule cat-intermedio_eda-niMedio_niViejo
     (Categoria-Vivienda Intermedia)
-    (NOT [Edad_Aparente Medio OR Viejo])
+    (Edad_Aparente not [ Medio or Viejo ])
     =>
     (assert (VUE-DIF Bajo))
 )
@@ -146,15 +164,30 @@
     (Categoria-Vivienda Economica)
     (Edad_Aparente Nuevo)
     =>
-    (assert (NOT [VUE-DIF Bajo OR Medio]))
+    (assert (VUE-DIF not [ Bajo or Medio ]))
 )
 
 ;;REGLA 9
 (defrule cat-economica_eda-niRecienteniNueva
     (Categoria-Vivienda Economica)
-    (NOT [Edad_Aparente Reciente OR Nuevo])
+    (Edad_Aparente not [ Reciente or Nuevo ])
     =>
     (assert (VUE-DIF Bajisimo))
+)
+
+;;REGLA VENTANAS
+(defrule menos_tres_ventanas
+    (n_ventanas ?vent)
+    (test(< ?vent 3))
+    =>
+    (assert (VUE-DIF more-or-less Bajo))
+)
+    
+(defrule menos_tres_ventanas
+    (n_ventanas ?vent)
+    (test(> ?vent 5))
+    =>
+    (assert (VUE-DIF very Alto))    
 )
 
 ;;REGLA DEFUSIFICACION
@@ -162,9 +195,10 @@
     (declare (salience -1))
     (VUE-DIF ?val)
     =>
-    (bind ?res (moment-defuzzify ?val))
-    (printout t "(Moment) El valor por la unidad de superficie es " ?res)
-    (bind ?res (maximum-defuzzify ?val))
-    (printout t "(Maximum) El valor por la unidad de superficie es " ?res)
+    (assert(crisp vue_maximum (maximum-defuzzify ?val)))
+    (assert(crisp vue_momentum (moment-defuzzify ?val)))
+
+    (printout t "(Moment) El valor por la unidad de superficie es " (moment-defuzzify ?val) crlf)
+    (printout t "(Maximum) El valor por la unidad de superficie es " (maximum-defuzzify ?val) crlf)
     (halt)
 )
